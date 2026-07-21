@@ -1,3 +1,5 @@
+use crate::mmu::Mmu;
+
 pub struct Cpu {
     a: u8,
     b: u8,
@@ -33,5 +35,16 @@ impl Cpu {
             sp: 0xFFFE,
             cycles: 0,
         }
+    }
+
+    pub fn read_word(&self, mmu: &Mmu, addr: u16) -> u16 {
+        let low_byte = mmu.read(addr);
+        let high_byte = mmu.read(addr + 1);
+
+        (high_byte as u16) << 8 | low_byte as u16
+    }
+
+    pub fn step(&self, mmu: &Mmu) {
+        let opcode = mmu.read(self.pc);
     }
 }

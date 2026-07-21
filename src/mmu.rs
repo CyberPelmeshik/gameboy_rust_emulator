@@ -11,10 +11,26 @@ pub struct Mmu {
 }
 
 impl Mmu {
+    pub fn new() -> Self {
+        Mmu {
+            vram: [0; 8192],
+            wram: [0; 8192],
+            oam: [0; 160],
+            io_registers: [0; 128],
+            hram: [0; 127],
+            rom: Vec::new(),
+            ie: 0,
+        }
+    }
+
     pub fn load_rom(&mut self, path: &str) -> Result<(), std::io::Error> {
         let data = fs::read(path)?;
         self.rom = data;
         Ok(())
+    }
+
+    pub fn load_bytes(&mut self, data: &[u8]) {
+        self.rom = data.to_vec();
     }
 
     pub fn read(&self, addr: u16) -> u8 {
