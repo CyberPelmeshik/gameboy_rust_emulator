@@ -43,7 +43,7 @@ impl Mmu {
                 .unwrap_or(0xFF),
             /*
             0xA000..=0xBFFF => self
-                .eram
+                .eram.
                 .get((addr - 0xA000) as usize)
                 .copied()
                 .unwrap_or(0xFF),

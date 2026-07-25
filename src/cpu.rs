@@ -8,12 +8,13 @@ pub struct Cpu {
     e: u8,
     h: u8,
     l: u8,
-    flag_z: bool,
-    flag_n: bool,
-    flag_h: bool,
-    flag_c: bool,
-    pc: u16,
-    sp: u16,
+    flag_z: bool, // Последняя мат. операция равна нулю или два операнда оказались равными при сравнении
+    flag_n: bool, // Последння операция вычитание
+    flag_h: bool, // В последней мат операции был перенос из младшего полу-байта
+    flag_c: bool, // Произошел переном при последней мат операции
+    pc: u16,      // Счетсчик исструкций, указывает на следующую инструкцию
+    sp: u16,      // Вершина стека
+    ime: bool,    // Флаг обработки прерываний?
     cycles: u64,
 }
 
@@ -33,6 +34,7 @@ impl Cpu {
             flag_c: false,
             pc: 0x0100,
             sp: 0xFFFE,
+            ime: false,
             cycles: 0,
         }
     }
@@ -44,7 +46,20 @@ impl Cpu {
         (high_byte as u16) << 8 | low_byte as u16
     }
 
-    pub fn step(&self, mmu: &Mmu) {
+    pub fn step(&mut self, mmu: &mut Mmu) {
         let opcode = mmu.read(self.pc);
+
+        match opcode {
+            0x00 => {
+                //NOP
+                self.pc += 1;
+                self.cycles += 4;
+            },
+            0x40 => {
+                // LD B, B
+                self.
+            }
+            _ => {}
+        }
     }
 }
