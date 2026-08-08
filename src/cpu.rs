@@ -380,13 +380,13 @@ impl Cpu {
                 self.pc += 2;
                 self.cycles += 8;
             }
-            0x16 => {
+            0x17 => {
                 // RLA
 
-                // RLCA
+                let flag_c_bit = self.flag_c as u8;
                 self.flag_c = (self.a & 0x80) != 0;
 
-                self.a = (self.a << 1) | (self.a >> 7);
+                self.a = (self.a << 1) | (flag_c_bit);
 
                 self.flag_z = false;
                 self.flag_h = false;
@@ -394,6 +394,103 @@ impl Cpu {
 
                 self.pc += 1;
                 self.cycles += 4;
+            }
+            0x18 => {
+                // JR e8
+
+                self.pc = self.pc.wrapping_add((mmu.read(self.pc + 1) as i8) as u16);
+
+                self.pc += 2;
+                self.cycles += 12;
+            }
+            0x19 => {
+                // ADD HL, DE
+
+                let de = self.get_pair(Register::D, Register::E);
+                let hl = self.get_pair(Register::H, Register::L);
+
+                let value = de.wrapping_add(hl);
+
+                self.set_pair(Register::H, Register::L, value);
+
+                self.flag_n = false;
+                self.flag_h = ((de & 0x0FFF) + (hl & 0x0FFF)) > 0x0FFF;
+                self.flag_c = hl as u32 + de as u32 > 0xFFFF;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x1A => {
+                // LD A, [DE]
+
+                let de = self.get_pair(Register::D, Register::E);
+                self.a = mmu.read(de);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x1B => {
+                // DEC DE
+
+                let mut de = self.get_pair(Register::D, Register::E);
+                de = de.wrapping_sub(1);
+
+                self.set_pair(Register::D, Register::E, de);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x1C => {
+                // INC E
+
+                self.inc(Register::E);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x1D => {
+                // DEC E
+
+                self.dec(Register::E);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x1E => {
+                // LD E, n8
+
+                self.e = mmu.read(self.pc + 1);
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0x1F => {
+                // RRA
+
+                let flag_c_bit = self.flag_c as u8;
+                self.flag_c = (self.a & 0x01) != 0;
+
+                self.a = (self.a >> 1) | (flag_c_bit << 7);
+
+                self.flag_z = false;
+                self.flag_h = false;
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x20 => {
+                // JR NC, e8
+
+                if self.flag_z {
+                    self.pc = self.pc.wrapping_add((mmu.read(self.pc + 1) as i8) as u16);
+
+                    self.pc += 2;
+                    self.cycles += 12;
+                } else {
+                    self.pc += 2;
+                    self.cycles += 8;
+                }
             }
             0x21 => {
                 // LD HL, n16
@@ -405,6 +502,50 @@ impl Cpu {
 
                 self.pc += 3;
                 self.cycles += 12;
+            }
+            0x22 => {
+                // LD [HL+], A
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.get_register(Register::A));
+                self.set_pair(Register::H, Register::L, addr.wrapping_add(1));
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x23 => {
+                // INC HL
+
+                let value = self.get_pair(Register::H, Register::L);
+                self.set_pair(Register::H, Register::L, value.wrapping_add(1));
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x24 => {
+                // INC H
+
+                self.inc(Register::H);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x25 => {
+                // DEC D
+
+                self.dec(Register::H);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x26 => {
+                // LD H, n8
+
+                let value = mmu.read(self.pc + 1);
+                self.set_register(Register::H, value);
+
+                self.pc += 2;
+                self.cycles += 8;
             }
             0x31 => {
                 // LD SP, n16
