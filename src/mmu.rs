@@ -33,6 +33,30 @@ impl Mmu {
         self.rom = data.to_vec();
     }
 
+    pub fn read_word(&self, addr: u16) -> u16 {
+        let low_byte = self.read(addr);
+        let high_byte = self.read(addr + 1);
+
+        (high_byte as u16) << 8 | low_byte as u16
+    }
+
+    pub fn read_word_pair(&self, addr: u16) -> (u8, u8) {
+        let low_byte = self.read(addr);
+        let high_byte = self.read(addr + 1);
+
+        return (high_byte, low_byte);
+    }
+
+    pub fn write_word(&mut self, addr: u16, value: u16) {
+        self.write(addr, value as u8);
+        self.write(addr + 1, (value >> 8) as u8);
+    }
+
+    pub fn write_word_pair(&mut self, addr: u16, value_1: u8, value_2: u8) {
+        self.write(addr, value_1);
+        self.write(addr + 1, value_2);
+    }
+
     pub fn read(&self, addr: u16) -> u8 {
         match addr {
             0x0000..=0x7FFF => self.rom.get(addr as usize).copied().unwrap_or(0xFF),
