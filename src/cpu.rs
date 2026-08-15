@@ -1353,7 +1353,129 @@ impl Cpu {
                 self.pc += 1;
                 self.cycles += 4;
             }
-            0x80 => {}
+            0x80 => {
+                // ADD A, B
+
+                self.flag_h = ((self.a & 0x0F) + (self.b & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + self.b as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.b);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x81 => {
+                // ADD A, С
+
+                self.flag_h = ((self.a & 0x0F) + (self.c & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + self.c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.c);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x82 => {
+                // ADD A, С
+
+                self.flag_h = ((self.a & 0x0F) + (self.d & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + self.d as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.d);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x83 => {
+                // ADD A, E
+
+                self.flag_h = ((self.a & 0x0F) + (self.e & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + self.e as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.e);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x84 => {
+                // ADD A, H
+
+                self.flag_h = ((self.a & 0x0F) + (self.h & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + self.h as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.h);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x85 => {
+                // ADD A, L
+
+                self.flag_h = ((self.a & 0x0F) + (self.l & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + self.l as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.l);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x86 => {
+                // ADD A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_h = ((self.a & 0x0F) + (value & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + value as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(value);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x87 => {
+                // ADD A, A
+
+                self.flag_h = ((self.a & 0x0F) + (self.a & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + self.a as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.a);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
             _ => {}
         }
     }
