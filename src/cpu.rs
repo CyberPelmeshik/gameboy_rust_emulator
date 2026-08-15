@@ -163,7 +163,8 @@ impl Cpu {
 
         match opcode {
             0x00 => {
-                //NOP
+                // NOP
+
                 self.pc += 1;
                 self.cycles += 4;
             }
@@ -194,7 +195,7 @@ impl Cpu {
                 self.set_pair(Register::B, Register::C, value.wrapping_add(1));
 
                 self.pc += 1;
-                self.cycles += 8;
+                self.cycles += 4;
             }
             0x04 => {
                 // INC B
@@ -281,7 +282,7 @@ impl Cpu {
                 self.cycles += 8;
             }
             0x0C => {
-                // INC B
+                // INC C
 
                 self.inc(Register::C);
 
@@ -361,7 +362,7 @@ impl Cpu {
                 self.inc(Register::D);
 
                 self.pc += 1;
-                self.cycles += 8;
+                self.cycles += 4;
             }
             0x15 => {
                 // DEC D
@@ -369,7 +370,7 @@ impl Cpu {
                 self.dec(Register::D);
 
                 self.pc += 1;
-                self.cycles += 8;
+                self.cycles += 4;
             }
             0x16 => {
                 // LD D, n8
@@ -480,9 +481,9 @@ impl Cpu {
                 self.cycles += 4;
             }
             0x20 => {
-                // JR NC, e8
+                // JR NZ, e8
 
-                if self.flag_z {
+                if !self.flag_z {
                     self.pc = self.pc.wrapping_add((mmu.read(self.pc + 1) as i8) as u16);
 
                     self.pc += 2;
@@ -528,15 +529,15 @@ impl Cpu {
                 self.inc(Register::H);
 
                 self.pc += 1;
-                self.cycles += 8;
+                self.cycles += 4;
             }
             0x25 => {
-                // DEC D
+                // DEC H
 
                 self.dec(Register::H);
 
                 self.pc += 1;
-                self.cycles += 8;
+                self.cycles += 4;
             }
             0x26 => {
                 // LD H, n8
@@ -547,6 +548,140 @@ impl Cpu {
                 self.pc += 2;
                 self.cycles += 8;
             }
+            0x27 => {
+                // DAA
+
+                if self.flag_n {
+                    if self.flag_h {
+                        self.a = self.a.wrapping_sub(0x06);
+                    }
+
+                    if self.flag_c {
+                        self.c = self.c.wrapping_sub(0x60);
+                    }
+                } else {
+                    if self.flag_h || (self.a & 0x0F) > 0x09 {
+                        self.a = self.a.wrapping_add(0x06);
+                    }
+
+                    if self.flag_c || self.a > 0x99 {
+                        self.c = self.c.wrapping_add(0x60);
+                    }
+                }
+
+                let value = mmu.read(self.pc + 1);
+                self.set_register(Register::H, value);
+
+                self.flag_h = false;
+                self.flag_n = false;
+                self.flag_z = self.a == 0;
+
+                if self.a > 0x99 {
+                    self.flag_c = true;
+                }
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x28 => {
+                // JR Z, e8
+
+                if self.flag_z {
+                    self.pc = self.pc.wrapping_add((mmu.read(self.pc + 1) as i8) as u16);
+
+                    self.pc += 2;
+                    self.cycles += 12;
+                } else {
+                    self.pc += 2;
+                    self.cycles += 8;
+                }
+            }
+            0x29 => {
+                // ADD HL, HL
+
+                let hl = self.get_pair(Register::H, Register::L);
+
+                let value = hl.wrapping_add(hl);
+
+                self.set_pair(Register::H, Register::L, value);
+
+                self.flag_n = false;
+                self.flag_h = ((hl & 0x0FFF) + (hl & 0x0FFF)) > 0x0FFF;
+                self.flag_c = hl as u32 + hl as u32 > 0xFFFF;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x2A => {
+                // LD A, [HL+]
+
+                let hl = self.get_pair(Register::H, Register::L);
+                self.a = mmu.read(hl);
+
+                self.set_pair(Register::H, Register::L, hl.wrapping_add(1));
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x2B => {
+                // DEC HL
+
+                let mut hl = self.get_pair(Register::H, Register::L);
+                hl = hl.wrapping_sub(1);
+
+                self.set_pair(Register::H, Register::L, hl);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x2C => {
+                // INC L
+
+                self.inc(Register::L);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x2D => {
+                // INC L
+
+                self.dec(Register::L);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x2E => {
+                // LD L, n8
+
+                self.l = mmu.read(self.pc + 1);
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0x2F => {
+                // CPL
+
+                self.a = !self.a;
+
+                self.flag_n = true;
+                self.flag_h = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x30 => {
+                // JR NC, e8
+
+                if !self.flag_c {
+                    self.pc = self.pc.wrapping_add((mmu.read(self.pc + 1) as i8) as u16);
+
+                    self.pc += 2;
+                    self.cycles += 12;
+                } else {
+                    self.pc += 2;
+                    self.cycles += 8;
+                }
+            }
             0x31 => {
                 // LD SP, n16
 
@@ -555,7 +690,166 @@ impl Cpu {
                 self.pc += 3;
                 self.cycles += 12;
             }
-            0x42 => {
+            0x32 => {
+                // LD [HL-], A
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.get_register(Register::A));
+                self.set_pair(Register::H, Register::L, addr.wrapping_sub(1));
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x33 => {
+                // INC SP
+
+                self.sp = self.sp.wrapping_add(1);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x34 => {
+                // INC [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr).wrapping_add(1);
+                mmu.write(addr, value);
+
+                self.flag_z = (value == 0x00);
+
+                self.flag_n = false;
+
+                self.flag_h = ((value & 0x0F) == 0);
+
+                self.pc += 1;
+                self.cycles += 12;
+            }
+            0x35 => {
+                // DEC [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr).wrapping_sub(1);
+                mmu.write(addr, value);
+
+                self.flag_z = (value == 0x00);
+
+                self.flag_n = true;
+
+                self.flag_h = (value & 0x0F == 0x0F);
+
+                self.pc += 1;
+                self.cycles += 12;
+            }
+            0x36 => {
+                // LD [HL], n8
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(self.pc + 1);
+
+                mmu.write(addr, value);
+
+                self.pc += 2;
+                self.cycles += 12;
+            }
+            0x37 => {
+                // SCF
+
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x38 => {
+                // JR C, e8
+
+                if self.flag_c {
+                    self.pc = self.pc.wrapping_add((mmu.read(self.pc + 1) as i8) as u16);
+
+                    self.pc += 2;
+                    self.cycles += 12;
+                } else {
+                    self.pc += 2;
+                    self.cycles += 8;
+                }
+            }
+            0x39 => {
+                // ADD HL, SP
+
+                let hl = self.get_pair(Register::H, Register::L);
+
+                let value = hl.wrapping_add(self.sp);
+
+                self.set_pair(Register::H, Register::L, value);
+
+                self.flag_n = false;
+                self.flag_h = ((hl & 0x0FFF) + (self.sp & 0x0FFF)) > 0x0FFF;
+                self.flag_c = hl as u32 + self.sp as u32 > 0xFFFF;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x3A => {
+                // LD A, [HL-]
+
+                let hl = self.get_pair(Register::H, Register::L);
+                self.a = mmu.read(hl);
+
+                self.set_pair(Register::H, Register::L, hl.wrapping_sub(1));
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x3B => {
+                // DEC SP
+
+                self.sp = self.sp.wrapping_sub(1);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x3C => {
+                // INC A
+
+                self.inc(Register::A);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x3D => {
+                // DEC A
+
+                self.dec(Register::A);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x3E => {
+                // LD A, n8
+
+                self.a = mmu.read(self.pc + 1);
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0x3F => {
+                // CCF
+
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = !self.flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x40 => {
+                // LD B, B
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x41 => {
                 // LD B, C
 
                 self.b = self.c;
@@ -563,7 +857,503 @@ impl Cpu {
                 self.pc += 1;
                 self.cycles += 4;
             }
+            0x42 => {
+                // LD B, D
 
+                self.b = self.d;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x43 => {
+                // LD B, E
+
+                self.b = self.e;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x44 => {
+                // LD B, H
+
+                self.b = self.h;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x45 => {
+                // LD B, L
+
+                self.b = self.l;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x46 => {
+                // LD B, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                self.b = mmu.read(addr);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x47 => {
+                // LD B, A
+
+                self.b = self.a;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x48 => {
+                // LD C, B
+
+                self.c = self.b;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x49 => {
+                // LD C, C
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x4A => {
+                // LD C, D
+
+                self.c = self.d;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x4B => {
+                // LD C, E
+
+                self.c = self.e;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x4C => {
+                // LD C, H
+
+                self.c = self.h;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x4D => {
+                // LD c, L
+
+                self.c = self.l;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x4E => {
+                // LD C, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                self.c = mmu.read(addr);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x4F => {
+                // LD C, A
+
+                self.c = self.a;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x50 => {
+                // LD D, B
+
+                self.d = self.b;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x51 => {
+                // LD D, C
+
+                self.d = self.c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x52 => {
+                // LD D, D
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x53 => {
+                // LD D, E
+
+                self.d = self.e;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x54 => {
+                // LD D, H
+
+                self.d = self.h;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x55 => {
+                // LD D, L
+
+                self.d = self.l;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x56 => {
+                // LD D, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                self.d = mmu.read(addr);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x57 => {
+                // LD D, A
+
+                self.d = self.a;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x58 => {
+                // LD E, B
+
+                self.e = self.b;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x59 => {
+                // LD E, C
+
+                self.e = self.c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x5A => {
+                // LD E, D
+
+                self.e = self.d;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x5B => {
+                // LD E, E
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x5C => {
+                // LD E, H
+
+                self.e = self.h;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x5D => {
+                // LD E, L
+
+                self.e = self.l;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x5E => {
+                // LD E, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                self.e = mmu.read(addr);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x5F => {
+                // LD E, A
+
+                self.e = self.a;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x60 => {
+                // LD H, B
+
+                self.h = self.b;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x61 => {
+                // LD H, C
+
+                self.h = self.c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x62 => {
+                // LD H, D
+
+                self.h = self.d;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x63 => {
+                // LD H, E
+
+                self.h = self.e;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x64 => {
+                // LD H, H
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x65 => {
+                // LD H, L
+
+                self.h = self.l;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x66 => {
+                // LD H, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                self.h = mmu.read(addr);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x67 => {
+                // LD H, A
+
+                self.h = self.a;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x68 => {
+                // LD L, B
+
+                self.l = self.b;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x69 => {
+                // LD L, C
+
+                self.l = self.c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x6A => {
+                // LD L, D
+
+                self.l = self.d;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x6B => {
+                // LD L, E
+
+                self.l = self.e;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x6C => {
+                // LD L, H
+
+                self.l = self.h;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x6D => {
+                // LD L, L
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x6E => {
+                // LD L, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                self.l = mmu.read(addr);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x6F => {
+                // LD L, A
+
+                self.l = self.a;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x70 => {
+                // LD [HL], B
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.b);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x71 => {
+                // LD [HL], C
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.c);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x72 => {
+                // LD [HL], D
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.d);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x73 => {
+                // LD [HL], E
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.e);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x74 => {
+                // LD [HL], H
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.h);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x75 => {
+                // LD [HL], l
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.l);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x76 => {
+                // HALT
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x77 => {
+                // LD [HL], A
+
+                let addr = self.get_pair(Register::H, Register::L);
+                mmu.write(addr, self.a);
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x78 => {
+                // LD A, B
+
+                self.a = self.b;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x79 => {
+                // LD A, C
+
+                self.a = self.c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x7A => {
+                // LD A, D
+
+                self.a = self.d;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x7B => {
+                // LD A, E
+
+                self.a = self.e;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x7C => {
+                // LD A, H
+
+                self.a = self.h;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x7D => {
+                // LD A, L
+
+                self.a = self.l;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x7E => {
+                // LD L, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                self.a = mmu.read(addr);
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x7F => {
+                // LD A, A
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x80 => {}
             _ => {}
         }
     }
