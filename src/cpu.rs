@@ -1476,6 +1476,825 @@ impl Cpu {
                 self.pc += 1;
                 self.cycles += 4;
             }
+            0x88 => {
+                // ADC A, B
+
+                self.flag_h = ((self.a & 0x0F) + (self.b & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + self.b as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.b).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x89 => {
+                // ADC A, C
+
+                self.flag_h = ((self.a & 0x0F) + (self.c & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + self.c as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.c).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x8A => {
+                // ADC A, D
+
+                self.flag_h = ((self.a & 0x0F) + (self.d & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + self.d as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.d).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x8B => {
+                // ADC A, E
+
+                self.flag_h = ((self.a & 0x0F) + (self.e & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + self.e as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.e).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x8C => {
+                // ADC A, H
+
+                self.flag_h = ((self.a & 0x0F) + (self.h & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + self.h as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.h).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x8D => {
+                // ADC A, L
+
+                self.flag_h = ((self.a & 0x0F) + (self.l & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + self.l as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.l).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x8E => {
+                // ADC A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_h = ((self.a & 0x0F) + (value & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + value as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(value).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x8F => {
+                // ADC A, А
+
+                self.flag_h = ((self.a & 0x0F) + (self.a & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + self.a as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(self.a).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x90 => {
+                // SUB A, B
+
+                self.flag_h = (self.a & 0x0F) < (self.b & 0x0F);
+                self.flag_c = self.a < self.b;
+
+                self.a = self.a.wrapping_sub(self.b);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x91 => {
+                // SUB A, C
+
+                self.flag_h = (self.a & 0x0F) < (self.c & 0x0F);
+                self.flag_c = self.a < self.c;
+
+                self.a = self.a.wrapping_sub(self.c);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x92 => {
+                // SUB A, D
+
+                self.flag_h = (self.a & 0x0F) < (self.d & 0x0F);
+                self.flag_c = self.a < self.d;
+
+                self.a = self.a.wrapping_sub(self.d);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x93 => {
+                // SUB A, E
+
+                self.flag_h = (self.a & 0x0F) < (self.e & 0x0F);
+                self.flag_c = self.a < self.e;
+
+                self.a = self.a.wrapping_sub(self.e);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x94 => {
+                // SUB A, H
+
+                self.flag_h = (self.a & 0x0F) < (self.h & 0x0F);
+                self.flag_c = self.a < self.h;
+
+                self.a = self.a.wrapping_sub(self.h);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x95 => {
+                // SUB A, L
+
+                self.flag_h = (self.a & 0x0F) < (self.l & 0x0F);
+                self.flag_c = self.a < self.l;
+
+                self.a = self.a.wrapping_sub(self.l);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x96 => {
+                // SUB A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_h = (self.a & 0x0F) < (value & 0x0F);
+                self.flag_c = self.a < value;
+
+                self.a = self.a.wrapping_sub(value);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x97 => {
+                // SUB A, A
+
+                self.a = self.a.wrapping_sub(self.a);
+
+                self.flag_z = true;
+                self.flag_n = true;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x98 => {
+                // SBC A, B
+
+                self.flag_h = (self.a & 0x0F) < (self.b & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (self.b as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(self.b).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x99 => {
+                // SBC A, C
+
+                self.flag_h = (self.a & 0x0F) < (self.c & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (self.c as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(self.c).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x9A => {
+                // SBC A, D
+
+                self.flag_h = (self.a & 0x0F) < (self.d & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (self.d as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(self.d).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x9B => {
+                // SBC A, E
+
+                self.flag_h = (self.a & 0x0F) < (self.e & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (self.e as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(self.e).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x9C => {
+                // SBC A, H
+
+                self.flag_h = (self.a & 0x0F) < (self.h & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (self.h as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(self.h).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x9D => {
+                // SBC A, L
+
+                self.flag_h = (self.a & 0x0F) < (self.l & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (self.l as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(self.l).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x9E => {
+                // SBC A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_h = (self.a & 0x0F) < (value & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (value as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(value).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0x9F => {
+                // SBC A, A
+
+                self.flag_h = (self.a & 0x0F) < (self.a & 0x0F) + self.flag_c as u8;
+
+                self.a = self.a.wrapping_sub(self.a).wrapping_sub(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA0 => {
+                // AND A, B
+
+                self.a = self.a & self.b;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA1 => {
+                // AND A, C
+
+                self.a = self.a & self.c;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA2 => {
+                // AND A, D
+
+                self.a = self.a & self.d;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA3 => {
+                // AND A, E
+
+                self.a = self.a & self.e;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA4 => {
+                // AND A, H
+
+                self.a = self.a & self.h;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA5 => {
+                // AND A, L
+
+                self.a = self.a & self.l;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA6 => {
+                // AND A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.a = self.a & value;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0xA7 => {
+                // AND A, A
+
+                self.a = self.a & self.a;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA8 => {
+                // XOR A, B
+
+                self.a = self.a ^ self.b;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xA9 => {
+                // XOR A, С
+
+                self.a = self.a ^ self.c;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xAA => {
+                // XOR A, D
+
+                self.a = self.a ^ self.d;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xAB => {
+                // XOR A, E
+
+                self.a = self.a ^ self.e;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xAC => {
+                // XOR A, H
+
+                self.a = self.a ^ self.h;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xAD => {
+                // XOR A, L
+
+                self.a = self.a ^ self.l;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xAE => {
+                // XOR A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.a = self.a ^ value;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0xAF => {
+                // XOR A, A
+
+                self.a = self.a ^ self.a;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB0 => {
+                // OR A, B
+
+                self.a = self.a | self.b;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB1 => {
+                // OR A, C
+
+                self.a = self.a | self.c;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB2 => {
+                // OR A, D
+
+                self.a = self.a | self.d;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB3 => {
+                // OR A, E
+
+                self.a = self.a | self.e;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB4 => {
+                // OR A, H
+
+                self.a = self.a | self.h;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB5 => {
+                // OR A, L
+
+                self.a = self.a | self.l;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB6 => {
+                // OR A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.a = self.a | value;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0xB7 => {
+                // OR A, A
+
+                self.a = self.a | self.a;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB8 => {
+                // CP A, B
+
+                self.flag_z = self.a == self.b;
+                self.flag_n = true;
+                self.flag_h = (self.a & 0x0F) < (self.b & 0x0f);
+                self.flag_c = self.a < self.b;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xB9 => {
+                // CP A, C
+
+                self.flag_z = self.a == self.c;
+                self.flag_n = true;
+                self.flag_h = (self.a & 0x0F) < (self.c & 0x0f);
+                self.flag_c = self.a < self.c;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xBA => {
+                // CP A, D
+
+                self.flag_z = self.a == self.d;
+                self.flag_n = true;
+                self.flag_h = (self.a & 0x0F) < (self.d & 0x0f);
+                self.flag_c = self.a < self.d;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xBB => {
+                // CP A, E
+
+                self.flag_z = self.a == self.e;
+                self.flag_n = true;
+                self.flag_h = (self.a & 0x0F) < (self.e & 0x0f);
+                self.flag_c = self.a < self.e;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xBC => {
+                // CP A, H
+
+                self.flag_z = self.a == self.h;
+                self.flag_n = true;
+                self.flag_h = (self.a & 0x0F) < (self.h & 0x0f);
+                self.flag_c = self.a < self.h;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xBD => {
+                // CP A, L
+
+                self.flag_z = self.a == self.l;
+                self.flag_n = true;
+                self.flag_h = (self.a & 0x0F) < (self.l & 0x0f);
+                self.flag_c = self.a < self.l;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xBE => {
+                // CP A, [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_z = self.a == value;
+                self.flag_n = true;
+                self.flag_h = (self.a & 0x0F) < (value & 0x0f);
+                self.flag_c = self.a < value;
+
+                self.pc += 1;
+                self.cycles += 8;
+            }
+            0xBF => {
+                // CP A, A
+
+                self.flag_z = true;
+                self.flag_n = true;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0xC0 => {
+                // RET NZ
+
+                self.flag_z = true;
+                self.flag_n = true;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 1;
+                self.cycles += 4;
+            }
             _ => {}
         }
     }
