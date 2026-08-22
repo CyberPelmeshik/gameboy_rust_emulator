@@ -2109,7 +2109,7 @@ impl Cpu {
                     }
 
                     if self.flag_c {
-                        self.c = self.c.wrapping_sub(0x60);
+                        self.a = self.a.wrapping_sub(0x60);
                     }
                 } else {
                     if self.flag_h || (self.a & 0x0F) > 0x09 {
@@ -2117,20 +2117,13 @@ impl Cpu {
                     }
 
                     if self.flag_c || self.a > 0x99 {
-                        self.c = self.c.wrapping_add(0x60);
+                        self.flag_c = true;
+                        self.a = self.a.wrapping_add(0x60);
                     }
                 }
 
-                let value = mmu.read(self.pc + 1);
-                self.set_register(Register::H, value);
-
                 self.flag_h = false;
-                self.flag_n = false;
                 self.flag_z = self.a == 0;
-
-                if self.a > 0x99 {
-                    self.flag_c = true;
-                }
 
                 self.pc += 1;
                 self.cycles += 4;
