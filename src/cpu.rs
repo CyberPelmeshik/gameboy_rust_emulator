@@ -326,7 +326,7 @@ impl Cpu {
     }
 
     pub fn prefixed(&mut self, mmu: &mut Mmu) {
-        let opcode = mmu.read(self.pc);
+        let opcode = mmu.read(self.pc + 1);
         match opcode {
             0x00 => {
                 // RLC B
@@ -3958,9 +3958,6 @@ impl Cpu {
             }
             0xCB => {
                 // PREFIX
-
-                self.pc += 1;
-                self.cycles += 4;
 
                 self.prefixed(mmu);
             }
