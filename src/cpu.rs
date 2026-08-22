@@ -158,6 +158,1553 @@ impl Cpu {
         return value;
     }
 
+    fn rlc(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        self.flag_c = (value >> 7) != 0;
+        self.set_register(reg, (value << 1) | (value >> 7));
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn rrc(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        self.flag_c = value & 0x01 != 0;
+        self.set_register(reg, (value >> 1) | (value << 7));
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn rl(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        let new_flag_c = (value >> 7) == 1;
+
+        self.set_register(reg, (value << 1) | (self.flag_c as u8));
+
+        self.flag_c = new_flag_c;
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn rr(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        let new_flag_c = value & 0x01 != 0;
+
+        self.set_register(reg, (value >> 1) | (self.flag_c as u8) << 7);
+
+        self.flag_c = new_flag_c;
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn sla(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        self.flag_c = value >> 7 == 1;
+        self.set_register(reg, value << 1);
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn sra(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        self.flag_c = value & 0x01 == 1;
+        self.set_register(reg, (value >> 1) | (value & 0x80));
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn swap(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        self.set_register(reg, (value >> 4) | (value << 4));
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+        self.flag_c = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn srl(&mut self, reg: Register) {
+        let value = self.get_register(reg);
+        self.flag_c = value & 0x01 == 1;
+        self.set_register(reg, value >> 1);
+
+        self.flag_z = self.get_register(reg) == 0;
+        self.flag_n = false;
+        self.flag_h = false;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn bit(&mut self, reg: Register, bit: u8) {
+        let value = (self.get_register(reg) >> bit) & 0x01;
+
+        self.flag_z = value == 0;
+        self.flag_n = false;
+        self.flag_h = true;
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn bit_hl(&mut self, mmu: &mut Mmu, bit: u8) {
+        let addr = self.get_pair(Register::H, Register::L);
+        let value = (mmu.read(addr) >> bit) & 0x01;
+
+        self.flag_z = value == 0;
+        self.flag_n = false;
+        self.flag_h = true;
+
+        self.pc += 2;
+        self.cycles += 12;
+    }
+
+    fn res(&mut self, reg: Register, bit: u8) {
+        let value = self.get_register(reg) & !(1 << bit);
+        self.set_register(reg, value);
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn res_hl(&mut self, mmu: &mut Mmu, bit: u8) {
+        let addr = self.get_pair(Register::H, Register::L);
+        let value = mmu.read(addr) & !(1 << bit);
+        mmu.write(addr, value);
+
+        self.pc += 2;
+        self.cycles += 16;
+    }
+
+    fn set(&mut self, reg: Register, bit: u8) {
+        let value = self.get_register(reg) | (1 << bit);
+        self.set_register(reg, value);
+
+        self.pc += 2;
+        self.cycles += 8;
+    }
+
+    fn set_hl(&mut self, mmu: &mut Mmu, bit: u8) {
+        let addr = self.get_pair(Register::H, Register::L);
+        let value = mmu.read(addr) | (1 << bit);
+        mmu.write(addr, value);
+
+        self.pc += 2;
+        self.cycles += 16;
+    }
+
+    pub fn prefixed(&mut self, mmu: &mut Mmu) {
+        let opcode = mmu.read(self.pc);
+        match opcode {
+            0x00 => {
+                // RLC B
+
+                self.rlc(Register::B)
+            }
+            0x01 => {
+                // RLC C
+
+                self.rlc(Register::C)
+            }
+            0x02 => {
+                // RLC D
+
+                self.rlc(Register::D)
+            }
+            0x03 => {
+                // RLC E
+
+                self.rlc(Register::E)
+            }
+            0x04 => {
+                // RLC H
+
+                self.rlc(Register::H)
+            }
+            0x05 => {
+                // RLC L
+
+                self.rlc(Register::L)
+            }
+            0x06 => {
+                // RLC [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_c = (value >> 7) != 0;
+                let new_value = (value << 1) | (value >> 7);
+                mmu.write(addr, new_value);
+
+                self.flag_z = new_value == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x07 => {
+                // RLC A
+
+                self.rlc(Register::A)
+            }
+            0x08 => {
+                // RRC B
+
+                self.rrc(Register::B);
+            }
+            0x09 => {
+                // RRC C
+
+                self.rrc(Register::C);
+            }
+            0x0A => {
+                // RRC D
+
+                self.rrc(Register::D);
+            }
+            0x0B => {
+                // RRC E
+
+                self.rrc(Register::E);
+            }
+            0x0C => {
+                // RRC H
+
+                self.rrc(Register::H);
+            }
+            0x0D => {
+                // RRC L
+
+                self.rrc(Register::L);
+            }
+            0x0E => {
+                // RRC [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_c = value & 0x01 != 0;
+                let new_value = (value >> 1) | (value << 7);
+
+                mmu.write(addr, new_value);
+
+                self.flag_z = new_value == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x0F => {
+                // RRC A
+
+                self.rrc(Register::A);
+            }
+            0x10 => {
+                // RL B
+
+                self.rl(Register::B);
+            }
+            0x11 => {
+                // RL C
+
+                self.rl(Register::C);
+            }
+            0x12 => {
+                // RL D
+
+                self.rl(Register::D);
+            }
+            0x13 => {
+                // RL E
+
+                self.rl(Register::E);
+            }
+            0x14 => {
+                // RL H
+
+                self.rl(Register::H);
+            }
+            0x15 => {
+                // RL L
+
+                self.rl(Register::L);
+            }
+            0x16 => {
+                // RL [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+                let new_flag_c = (value >> 7) == 1;
+                let new_value = (value << 1) | (self.flag_c as u8);
+
+                mmu.write(addr, new_value);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = new_value == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x17 => {
+                // RL A
+
+                self.rl(Register::A);
+            }
+            0x18 => {
+                // RR B
+
+                self.rr(Register::B);
+            }
+            0x19 => {
+                // RR C
+
+                self.rr(Register::C);
+            }
+            0x1A => {
+                // RR D
+
+                self.rr(Register::D);
+            }
+            0x1B => {
+                // RR E
+
+                self.rr(Register::E);
+            }
+            0x1C => {
+                // RR H
+
+                self.rr(Register::H);
+            }
+            0x1D => {
+                // RR L
+
+                self.rr(Register::L);
+            }
+            0x1E => {
+                // RR [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+                let new_flag_c = value & 0x01 == 1;
+                let new_value = (value >> 1) | (self.flag_c as u8) << 7;
+
+                mmu.write(addr, new_value);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = new_value == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x1F => {
+                // RR A
+
+                self.rr(Register::A);
+            }
+            0x20 => {
+                // SLA B
+
+                self.sla(Register::B);
+            }
+            0x21 => {
+                // SLA C
+
+                self.sla(Register::C);
+            }
+            0x22 => {
+                // SLA D
+
+                self.sla(Register::D);
+            }
+            0x23 => {
+                // SLA E
+
+                self.sla(Register::E);
+            }
+            0x24 => {
+                // SLA H
+
+                self.sla(Register::H);
+            }
+            0x25 => {
+                // SLA L
+
+                self.sla(Register::L);
+            }
+            0x26 => {
+                // SLA [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_c = value >> 7 == 1;
+                mmu.write(addr, value << 1);
+
+                self.flag_z = value << 1 == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x27 => {
+                // SLA A
+
+                self.sla(Register::A);
+            }
+            0x28 => {
+                // SRA B
+
+                self.sra(Register::B);
+            }
+            0x29 => {
+                // SRA C
+
+                self.sra(Register::C);
+            }
+            0x2A => {
+                // SRA D
+
+                self.sra(Register::D);
+            }
+            0x2B => {
+                // SRA E
+
+                self.sra(Register::E);
+            }
+            0x2C => {
+                // SRA H
+
+                self.sra(Register::H);
+            }
+            0x2D => {
+                // SRA D
+
+                self.sra(Register::L);
+            }
+            0x2E => {
+                // SRA [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_c = value & 0x01 == 1;
+                mmu.write(addr, (value >> 1) | (value & 0x80));
+
+                self.flag_z = mmu.read(addr) == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x2F => {
+                // SRA A
+
+                self.sla(Register::A);
+            }
+            0x30 => {
+                // SWAP B
+
+                self.swap(Register::B);
+            }
+            0x31 => {
+                // SWAP C
+
+                self.swap(Register::C);
+            }
+            0x32 => {
+                // SWAP D
+
+                self.swap(Register::D);
+            }
+            0x33 => {
+                // SWAP E
+
+                self.swap(Register::E);
+            }
+            0x34 => {
+                // SWAP H
+
+                self.swap(Register::H);
+            }
+            0x35 => {
+                // SWAP L
+
+                self.swap(Register::L);
+            }
+            0x36 => {
+                // SWAP [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                mmu.write(addr, (value >> 4) | (value << 4));
+
+                self.flag_z = mmu.read(addr) == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x37 => {
+                // SWAP A
+
+                self.swap(Register::A);
+            }
+            0x38 => {
+                // SRL B
+
+                self.srl(Register::B);
+            }
+            0x39 => {
+                // SRL C
+
+                self.srl(Register::C);
+            }
+            0x3A => {
+                // SRL D
+
+                self.srl(Register::D);
+            }
+            0x3B => {
+                // SRL E
+
+                self.sra(Register::E);
+            }
+            0x3C => {
+                // SRL H
+
+                self.sra(Register::H);
+            }
+            0x3D => {
+                // SRL L
+
+                self.sra(Register::L);
+            }
+            0x3E => {
+                // SRL [HL]
+
+                let addr = self.get_pair(Register::H, Register::L);
+                let value = mmu.read(addr);
+
+                self.flag_c = value & 0x01 == 1;
+                mmu.write(addr, (value >> 1));
+
+                self.flag_z = mmu.read(addr) == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0x40 => {
+                // BIT 0, B
+
+                self.bit(Register::B, 0);
+            }
+            0x41 => {
+                // BIT 0, C
+
+                self.bit(Register::C, 0);
+            }
+            0x42 => {
+                // BIT 0, D
+
+                self.bit(Register::D, 0);
+            }
+            0x43 => {
+                // BIT 0, E
+
+                self.bit(Register::E, 0);
+            }
+            0x44 => {
+                // BIT 0, H
+
+                self.bit(Register::H, 0);
+            }
+            0x45 => {
+                // BIT 0, L
+
+                self.bit(Register::L, 0);
+            }
+            0x46 => {
+                // BIT 0, [HL]
+
+                self.bit_hl(mmu, 0);
+            }
+            0x47 => {
+                // BIT 0, A
+
+                self.bit(Register::A, 0);
+            }
+            0x48 => {
+                // BIT 1, B
+
+                self.bit(Register::B, 1);
+            }
+            0x49 => {
+                // BIT 1, C
+
+                self.bit(Register::C, 1);
+            }
+            0x4A => {
+                // BIT 1, D
+
+                self.bit(Register::D, 1);
+            }
+            0x4B => {
+                // BIT 1, E
+
+                self.bit(Register::E, 1);
+            }
+            0x4C => {
+                // BIT 1, H
+
+                self.bit(Register::H, 1);
+            }
+            0x4D => {
+                // BIT 1, L
+
+                self.bit(Register::L, 1);
+            }
+            0x4E => {
+                // BIT 1, [HL]
+
+                self.bit_hl(mmu, 1);
+            }
+            0x4F => {
+                // BIT 1, A
+
+                self.bit(Register::A, 1);
+            }
+            0x50 => {
+                // BIT 2, B
+
+                self.bit(Register::B, 2);
+            }
+            0x51 => {
+                // BIT 2, C
+
+                self.bit(Register::C, 2);
+            }
+            0x52 => {
+                // BIT 2, D
+
+                self.bit(Register::D, 2);
+            }
+            0x53 => {
+                // BIT 2, E
+
+                self.bit(Register::E, 2);
+            }
+            0x54 => {
+                // BIT 2, H
+
+                self.bit(Register::H, 2);
+            }
+            0x55 => {
+                // BIT 2, L
+
+                self.bit(Register::L, 2);
+            }
+            0x56 => {
+                // BIT 2, [HL]
+
+                self.bit_hl(mmu, 2);
+            }
+            0x57 => {
+                // BIT 2, A
+
+                self.bit(Register::A, 2);
+            }
+            0x58 => {
+                // BIT 3, B
+
+                self.bit(Register::B, 3);
+            }
+            0x59 => {
+                // BIT 3, C
+
+                self.bit(Register::C, 3);
+            }
+            0x5A => {
+                // BIT 3, D
+
+                self.bit(Register::D, 3);
+            }
+            0x5B => {
+                // BIT 3, E
+
+                self.bit(Register::E, 3);
+            }
+            0x5C => {
+                // BIT 3, H
+
+                self.bit(Register::H, 3);
+            }
+            0x5D => {
+                // BIT 3, L
+
+                self.bit(Register::L, 3);
+            }
+            0x5E => {
+                // BIT 3, [HL]
+
+                self.bit_hl(mmu, 3);
+            }
+            0x5F => {
+                // BIT 3, A
+
+                self.bit(Register::A, 3);
+            }
+            0x60 => {
+                // BIT 4, B
+
+                self.bit(Register::B, 4);
+            }
+            0x61 => {
+                // BIT 4, C
+
+                self.bit(Register::C, 4);
+            }
+            0x62 => {
+                // BIT 4, D
+
+                self.bit(Register::D, 4);
+            }
+            0x63 => {
+                // BIT 4, E
+
+                self.bit(Register::E, 4);
+            }
+            0x64 => {
+                // BIT 4, H
+
+                self.bit(Register::H, 4);
+            }
+            0x65 => {
+                // BIT 4, L
+
+                self.bit(Register::L, 4);
+            }
+            0x66 => {
+                // BIT 4, [HL]
+
+                self.bit_hl(mmu, 4);
+            }
+            0x67 => {
+                // BIT 4, A
+
+                self.bit(Register::A, 4);
+            }
+            0x68 => {
+                // BIT 5, B
+
+                self.bit(Register::B, 5);
+            }
+            0x69 => {
+                // BIT 5, C
+
+                self.bit(Register::C, 5);
+            }
+            0x6A => {
+                // BIT 5, D
+
+                self.bit(Register::D, 5);
+            }
+            0x6B => {
+                // BIT 5, E
+
+                self.bit(Register::E, 5);
+            }
+            0x6C => {
+                // BIT 5, H
+
+                self.bit(Register::H, 5);
+            }
+            0x6D => {
+                // BIT 5, L
+
+                self.bit(Register::L, 5);
+            }
+            0x6E => {
+                // BIT 5, [HL]
+
+                self.bit_hl(mmu, 5);
+            }
+            0x6F => {
+                // BIT 5, A
+
+                self.bit(Register::A, 5);
+            }
+            0x70 => {
+                // BIT 6, B
+
+                self.bit(Register::B, 6);
+            }
+            0x71 => {
+                // BIT 6, C
+
+                self.bit(Register::C, 6);
+            }
+            0x72 => {
+                // BIT 6, D
+
+                self.bit(Register::D, 6);
+            }
+            0x73 => {
+                // BIT 6, E
+
+                self.bit(Register::E, 6);
+            }
+            0x74 => {
+                // BIT 6, H
+
+                self.bit(Register::H, 6);
+            }
+            0x75 => {
+                // BIT 6, L
+
+                self.bit(Register::L, 6);
+            }
+            0x76 => {
+                // BIT 6, [HL]
+
+                self.bit_hl(mmu, 6);
+            }
+            0x77 => {
+                // BIT 6, A
+
+                self.bit(Register::A, 6);
+            }
+            0x78 => {
+                // BIT 7, B
+
+                self.bit(Register::B, 7);
+            }
+            0x79 => {
+                // BIT 7, C
+
+                self.bit(Register::C, 7);
+            }
+            0x7A => {
+                // BIT 7, D
+
+                self.bit(Register::D, 7);
+            }
+            0x7B => {
+                // BIT 7, E
+
+                self.bit(Register::E, 7);
+            }
+            0x7C => {
+                // BIT 7, H
+
+                self.bit(Register::H, 7);
+            }
+            0x7D => {
+                // BIT 7, L
+
+                self.bit(Register::L, 7);
+            }
+            0x7E => {
+                // BIT 7, [HL]
+
+                self.bit_hl(mmu, 7);
+            }
+            0x7F => {
+                // BIT 7, A
+
+                self.bit(Register::A, 7);
+            }
+            0x80 => {
+                // RES 0, B
+
+                self.res(Register::B, 0);
+            }
+            0x81 => {
+                // RES 0, C
+
+                self.res(Register::C, 0);
+            }
+            0x82 => {
+                // RES 0, D
+
+                self.res(Register::D, 0);
+            }
+            0x83 => {
+                // RES 0, E
+
+                self.res(Register::E, 0);
+            }
+            0x84 => {
+                // res 0, H
+
+                self.res(Register::H, 0);
+            }
+            0x85 => {
+                // RES 0, L
+
+                self.res(Register::L, 0);
+            }
+            0x86 => {
+                // RES 0, [HL]
+
+                self.res_hl(mmu, 0);
+            }
+            0x87 => {
+                // RES 0, A
+
+                self.res(Register::A, 0);
+            }
+            0x88 => {
+                // RES 1, B
+
+                self.res(Register::B, 1);
+            }
+            0x89 => {
+                // RES 1, C
+
+                self.res(Register::C, 1);
+            }
+            0x8A => {
+                // RES 1, D
+
+                self.res(Register::D, 1);
+            }
+            0x8B => {
+                // RES 1, E
+
+                self.res(Register::E, 1);
+            }
+            0x8C => {
+                // RES 1, H
+
+                self.res(Register::H, 1);
+            }
+            0x8D => {
+                // RES 1, L
+
+                self.res(Register::L, 1);
+            }
+            0x8E => {
+                // RES 1, [HL]
+
+                self.res_hl(mmu, 1);
+            }
+            0x8F => {
+                // RES 1, A
+
+                self.res(Register::A, 1);
+            }
+            0x90 => {
+                // RES 2, B
+
+                self.res(Register::B, 2);
+            }
+            0x91 => {
+                // RES 2, C
+
+                self.res(Register::C, 2);
+            }
+            0x92 => {
+                // RES 2, D
+
+                self.res(Register::D, 2);
+            }
+            0x93 => {
+                // RES 2, E
+
+                self.res(Register::E, 2);
+            }
+            0x94 => {
+                // RES 2, H
+
+                self.res(Register::H, 2);
+            }
+            0x95 => {
+                // RES 2, L
+
+                self.res(Register::L, 2);
+            }
+            0x96 => {
+                // RES 2, [HL]
+
+                self.res_hl(mmu, 2);
+            }
+            0x97 => {
+                // RES 2, A
+
+                self.res(Register::A, 2);
+            }
+            0x98 => {
+                // RES 3, B
+
+                self.res(Register::B, 3);
+            }
+            0x99 => {
+                // RES 3, C
+
+                self.res(Register::C, 3);
+            }
+            0x9A => {
+                // RES 3, D
+
+                self.res(Register::D, 3);
+            }
+            0x9B => {
+                // RES 3, E
+
+                self.res(Register::E, 3);
+            }
+            0x9C => {
+                // RES 3, H
+
+                self.res(Register::H, 3);
+            }
+            0x9D => {
+                // RES 3, L
+
+                self.res(Register::L, 3);
+            }
+            0x9E => {
+                // RES 3, [HL]
+
+                self.res_hl(mmu, 3);
+            }
+            0x9F => {
+                // RES 3, A
+
+                self.res(Register::A, 3);
+            }
+            0xA0 => {
+                // RES 4, B
+
+                self.res(Register::B, 4);
+            }
+            0xA1 => {
+                // RES 4, C
+
+                self.res(Register::C, 4);
+            }
+            0xA2 => {
+                // RES 4, D
+
+                self.res(Register::D, 4);
+            }
+            0xA3 => {
+                // RES 4, E
+
+                self.res(Register::E, 4);
+            }
+            0xA4 => {
+                // RES 4, H
+
+                self.res(Register::H, 4);
+            }
+            0xA5 => {
+                // RES 4, L
+
+                self.res(Register::L, 4);
+            }
+            0xA6 => {
+                // RES 4, [HL]
+
+                self.res_hl(mmu, 4);
+            }
+            0xA7 => {
+                // RES 4, A
+
+                self.res(Register::A, 4);
+            }
+            0xA8 => {
+                // RES 5, B
+
+                self.res(Register::B, 5);
+            }
+            0xA9 => {
+                // RES 5, C
+
+                self.res(Register::C, 5);
+            }
+            0xAA => {
+                // RES 5, D
+
+                self.res(Register::D, 5);
+            }
+            0xAB => {
+                // RES 5, E
+
+                self.res(Register::E, 5);
+            }
+            0xAC => {
+                // RES 5, H
+
+                self.res(Register::H, 5);
+            }
+            0xAD => {
+                // RES 5, L
+
+                self.res(Register::L, 5);
+            }
+            0xAE => {
+                // RES 5, [HL]
+
+                self.res_hl(mmu, 5);
+            }
+            0xAF => {
+                // RES 5, A
+
+                self.res(Register::A, 5);
+            }
+            0xB0 => {
+                // RES 6, B
+
+                self.res(Register::B, 6);
+            }
+            0xB1 => {
+                // RES 6, C
+
+                self.res(Register::C, 6);
+            }
+            0xB2 => {
+                // RES 6, D
+
+                self.res(Register::D, 6);
+            }
+            0xB3 => {
+                // RES 6, E
+
+                self.res(Register::E, 6);
+            }
+            0xB4 => {
+                // RES 6, H
+
+                self.res(Register::H, 6);
+            }
+            0xB5 => {
+                // RES 6, L
+
+                self.res(Register::L, 6);
+            }
+            0xB6 => {
+                // RES 6, [HL]
+
+                self.res_hl(mmu, 6);
+            }
+            0xB7 => {
+                // RES 6, A
+
+                self.res(Register::A, 6);
+            }
+            0xB8 => {
+                // RES 7, B
+
+                self.res(Register::B, 7);
+            }
+            0xB9 => {
+                // RES 7, C
+
+                self.res(Register::C, 7);
+            }
+            0xBA => {
+                // RES 7, D
+
+                self.res(Register::D, 7);
+            }
+            0xBB => {
+                // RES 7, E
+
+                self.res(Register::E, 7);
+            }
+            0xBC => {
+                // RES 7, H
+
+                self.res(Register::H, 7);
+            }
+            0xBD => {
+                // RES 7, L
+
+                self.res(Register::L, 7);
+            }
+            0xBE => {
+                // RES 7, [HL]
+
+                self.res_hl(mmu, 7);
+            }
+            0xBF => {
+                // RES 7, A
+
+                self.res(Register::A, 7);
+            }
+            0xC0 => {
+                // SET 0, B
+
+                self.set(Register::B, 0);
+            }
+            0xC1 => {
+                // SET 0, C
+
+                self.set(Register::C, 0);
+            }
+            0xC2 => {
+                // SET 0, D
+
+                self.set(Register::D, 0);
+            }
+            0xC3 => {
+                // SET 0, E
+
+                self.set(Register::E, 0);
+            }
+            0xC4 => {
+                // SET 0, H
+
+                self.set(Register::H, 0);
+            }
+            0xC5 => {
+                // SET 0, L
+
+                self.set(Register::L, 0);
+            }
+            0xC6 => {
+                // SET 0, [HL]
+
+                self.set_hl(mmu, 0);
+            }
+            0xC7 => {
+                // SET 0, A
+
+                self.set(Register::A, 0);
+            }
+            0xC8 => {
+                // SET 1, B
+
+                self.set(Register::B, 1);
+            }
+            0xC9 => {
+                // SET 1, C
+
+                self.set(Register::C, 1);
+            }
+            0xCA => {
+                // SET 1, D
+
+                self.set(Register::D, 1);
+            }
+            0xCB => {
+                // SET 1, E
+
+                self.set(Register::E, 1);
+            }
+            0xCC => {
+                // SET 1, H
+
+                self.set(Register::H, 1);
+            }
+            0xCD => {
+                // SET 1, L
+
+                self.set(Register::L, 1);
+            }
+            0xCE => {
+                // SET 1, [HL]
+
+                self.set_hl(mmu, 1);
+            }
+            0xCF => {
+                // SET 1, A
+
+                self.set(Register::A, 1);
+            }
+            0xD0 => {
+                // SET 2, B
+
+                self.set(Register::B, 2);
+            }
+            0xD1 => {
+                // SET 2, C
+
+                self.set(Register::C, 2);
+            }
+            0xD2 => {
+                // SET 2, D
+
+                self.set(Register::D, 2);
+            }
+            0xD3 => {
+                // SET 2, E
+
+                self.set(Register::E, 2);
+            }
+            0xD4 => {
+                // SET 2, H
+
+                self.set(Register::H, 2);
+            }
+            0xD5 => {
+                // SET 2, L
+
+                self.set(Register::L, 2);
+            }
+            0xD6 => {
+                // SET 2, [HL]
+
+                self.set_hl(mmu, 2);
+            }
+            0xD7 => {
+                // SET 2, A
+
+                self.set(Register::A, 2);
+            }
+            0xD8 => {
+                // SET 3, B
+
+                self.set(Register::B, 3);
+            }
+            0xD9 => {
+                // SET 3, C
+
+                self.set(Register::C, 3);
+            }
+            0xDA => {
+                // SET 3, D
+
+                self.set(Register::D, 3);
+            }
+            0xDB => {
+                // SET 3, E
+
+                self.set(Register::E, 3);
+            }
+            0xDC => {
+                // SET 3, H
+
+                self.set(Register::H, 3);
+            }
+            0xDD => {
+                // SET 3, L
+
+                self.set(Register::L, 3);
+            }
+            0xDE => {
+                // SET 3, [HL]
+
+                self.set_hl(mmu, 3);
+            }
+            0xDF => {
+                // SET 3, A
+
+                self.set(Register::A, 3);
+            }
+            0xE0 => {
+                // SET 4, B
+
+                self.set(Register::B, 4);
+            }
+            0xE1 => {
+                // SET 4, C
+
+                self.set(Register::C, 4);
+            }
+            0xE2 => {
+                // SET 4, D
+
+                self.set(Register::D, 4);
+            }
+            0xE3 => {
+                // SET 4, E
+
+                self.set(Register::E, 4);
+            }
+            0xE4 => {
+                // SET 4, H
+
+                self.set(Register::H, 4);
+            }
+            0xE5 => {
+                // SET 4, L
+
+                self.set(Register::L, 4);
+            }
+            0xE6 => {
+                // SET 4, [HL]
+
+                self.set_hl(mmu, 4);
+            }
+            0xE7 => {
+                // SET 4, A
+
+                self.set(Register::A, 4);
+            }
+            0xE8 => {
+                // SET 5, B
+
+                self.set(Register::B, 5);
+            }
+            0xE9 => {
+                // SET 5, C
+
+                self.set(Register::C, 5);
+            }
+            0xEA => {
+                // SET 5, D
+
+                self.set(Register::D, 5);
+            }
+            0xEB => {
+                // SET 5, E
+
+                self.set(Register::E, 5);
+            }
+            0xEC => {
+                // SET 5, H
+
+                self.set(Register::H, 5);
+            }
+            0xED => {
+                // SET 5, L
+
+                self.set(Register::L, 5);
+            }
+            0xEE => {
+                // SET 5, [HL]
+
+                self.set_hl(mmu, 5);
+            }
+            0xEF => {
+                // SET 5, A
+
+                self.set(Register::A, 5);
+            }
+            0xF0 => {
+                // SET 6, B
+
+                self.set(Register::B, 6);
+            }
+            0xF1 => {
+                // SET 6, C
+
+                self.set(Register::C, 6);
+            }
+            0xF2 => {
+                // SET 6, D
+
+                self.set(Register::D, 6);
+            }
+            0xF3 => {
+                // SET 6, E
+
+                self.set(Register::E, 6);
+            }
+            0xF4 => {
+                // SET 6, H
+
+                self.set(Register::H, 6);
+            }
+            0xF5 => {
+                // SET 6, L
+
+                self.set(Register::L, 6);
+            }
+            0xF6 => {
+                // SET 6, [HL]
+
+                self.set_hl(mmu, 6);
+            }
+            0xF7 => {
+                // SET 6, A
+
+                self.set(Register::A, 6);
+            }
+            0xF8 => {
+                // SET 7, B
+
+                self.set(Register::B, 7);
+            }
+            0xF9 => {
+                // SET 7, C
+
+                self.set(Register::C, 7);
+            }
+            0xFA => {
+                // SET 7, D
+
+                self.set(Register::D, 7);
+            }
+            0xFB => {
+                // SET 7, E
+
+                self.set(Register::E, 7);
+            }
+            0xFC => {
+                // SET 7, H
+
+                self.set(Register::H, 7);
+            }
+            0xFD => {
+                // SET 7, L
+
+                self.set(Register::L, 7);
+            }
+            0xFE => {
+                // SET 7, [HL]
+
+                self.set_hl(mmu, 7);
+            }
+            0xFF => {
+                // SET 7, A
+
+                self.set(Register::A, 7);
+            }
+
+            _ => {}
+        }
+    }
+
     pub fn step(&mut self, mmu: &mut Mmu) {
         let opcode = mmu.read(self.pc);
 
