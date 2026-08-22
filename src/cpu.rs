@@ -641,7 +641,7 @@ impl Cpu {
             0x2F => {
                 // SRA A
 
-                self.sla(Register::A);
+                self.sra(Register::A);
             }
             0x30 => {
                 // SWAP B
@@ -712,17 +712,17 @@ impl Cpu {
             0x3B => {
                 // SRL E
 
-                self.sra(Register::E);
+                self.srl(Register::E);
             }
             0x3C => {
                 // SRL H
 
-                self.sra(Register::H);
+                self.srl(Register::H);
             }
             0x3D => {
                 // SRL L
 
-                self.sra(Register::L);
+                self.srl(Register::L);
             }
             0x3E => {
                 // SRL [HL]
@@ -739,6 +739,11 @@ impl Cpu {
 
                 self.pc += 2;
                 self.cycles += 16;
+            }
+            0x3F => {
+                // SRL A
+
+                self.srl(Register::A);
             }
             0x40 => {
                 // BIT 0, B
@@ -3954,7 +3959,10 @@ impl Cpu {
             0xCB => {
                 // PREFIX
 
-                // Доработать
+                self.pc += 1;
+                self.cycles += 4;
+
+                self.prefixed(mmu);
             }
             0xCC => {
                 // CALL Z, a16
