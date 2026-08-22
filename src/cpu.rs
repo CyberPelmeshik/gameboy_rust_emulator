@@ -2287,13 +2287,499 @@ impl Cpu {
             0xC0 => {
                 // RET NZ
 
-                self.flag_z = true;
+                if !self.flag_z {
+                    self.pc = mmu.read_word(self.sp);
+                    self.sp += 2;
+                    self.cycles += 20;
+                } else {
+                    self.cycles += 8;
+                    self.pc += 1;
+                }
+            }
+            0xC1 => {
+                // POP BC
+
+                let addr = mmu.read_word(self.sp);
+                self.c = (addr & 0xFF) as u8;
+                self.b = (addr >> 8 & 0xFF) as u8;
+                self.sp += 2;
+
+                self.cycles += 12;
+                self.pc += 1;
+            }
+            0xC2 => {
+                // JP NZ, a16
+
+                if !self.flag_z {
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 16;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xC3 => {
+                // JP a16
+
+                self.pc = mmu.read_word(self.pc + 1);
+                self.cycles += 16;
+            }
+            0xC4 => {
+                // CALL NZ, a16
+
+                if !self.flag_z {
+                    self.sp -= 2;
+                    mmu.write_word(self.sp, self.pc + 3);
+
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 24;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xC5 => {
+                // PUSH BC
+
+                mmu.write(self.sp - 1, self.b);
+                mmu.write(self.sp - 2, self.c);
+                self.sp -= 2;
+
+                self.cycles += 16;
+                self.pc += 1;
+            }
+            0xC6 => {
+                // ADD A, n8
+
+                let data = mmu.read(self.pc + 1);
+
+                self.flag_h = ((self.a & 0x0F) + (data & 0x0F)) > 0x0F;
+                self.flag_c = self.a as u16 + data as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(data);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0xC7 => {
+                // RST $00
+
+                self.sp -= 2;
+                mmu.write_word(self.sp, self.pc + 1);
+
+                self.pc = 0x0000;
+                self.cycles += 16;
+            }
+            0xC8 => {
+                // RET Z
+
+                if self.flag_z {
+                    self.pc = mmu.read_word(self.sp);
+                    self.sp += 2;
+                    self.cycles += 20;
+                } else {
+                    self.cycles += 8;
+                    self.pc += 1;
+                }
+            }
+            0xC9 => {
+                // RET
+
+                self.pc = mmu.read_word(self.sp);
+                self.sp += 2;
+                self.cycles += 16;
+            }
+            0xCA => {
+                // JP Z, a16
+
+                if self.flag_z {
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 16;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xCB => {
+                // PREFIX
+
+                // Доработать
+            }
+            0xCC => {
+                // CALL Z, a16
+
+                if self.flag_z {
+                    self.sp -= 2;
+                    mmu.write_word(self.sp, self.pc + 3);
+
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 24;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xCD => {
+                // CALL a16
+
+                self.sp -= 2;
+                mmu.write_word(self.sp, self.pc + 3);
+                self.pc = mmu.read_word(self.pc + 1);
+                self.cycles += 24;
+            }
+            0xCE => {
+                // ADC A, n8
+
+                let value = mmu.read(self.pc + 1);
+
+                self.flag_h = ((self.a & 0x0F) + (value & 0x0F) + self.flag_c as u8) > 0x0F;
+                let new_flag_c = self.a as u16 + value as u16 + self.flag_c as u16 > 0xFF;
+
+                self.a = self.a.wrapping_add(value).wrapping_add(self.flag_c as u8);
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = false;
+
+                self.flag_c = new_flag_c;
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0xCF => {
+                // RST $08
+
+                self.sp -= 2;
+                mmu.write_word(self.sp, self.pc + 1);
+
+                self.pc = 0x0008;
+                self.cycles += 16;
+            }
+            0xD0 => {
+                // RET NC
+
+                if !self.flag_c {
+                    self.pc = mmu.read_word(self.sp);
+                    self.sp += 2;
+                    self.cycles += 20;
+                } else {
+                    self.cycles += 8;
+                    self.pc += 1;
+                }
+            }
+            0xD1 => {
+                // POP DE
+
+                let addr = mmu.read_word(self.sp);
+                self.e = (addr & 0xFF) as u8;
+                self.d = (addr >> 8 & 0xFF) as u8;
+                self.sp += 2;
+
+                self.cycles += 12;
+                self.pc += 1;
+            }
+            0xD2 => {
+                // JP NC, a16
+
+                if !self.flag_c {
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 16;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xD3 => {
+                // Pass
+            }
+            0xD4 => {
+                // CALL NC, a16
+
+                if !self.flag_c {
+                    self.sp -= 2;
+                    mmu.write_word(self.sp, self.pc + 3);
+
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 24;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xD5 => {
+                // PUSH DE
+
+                mmu.write(self.sp - 1, self.d);
+                mmu.write(self.sp - 2, self.e);
+                self.sp -= 2;
+
+                self.cycles += 16;
+                self.pc += 1;
+            }
+            0xD6 => {
+                // SUB A, n8
+
+                let data = mmu.read(self.pc + 1);
+
+                self.flag_h = (self.a & 0x0F) < (data & 0x0F);
+                self.flag_c = self.a < data;
+
+                self.a = self.a.wrapping_sub(data);
+
+                self.flag_z = self.a == 0;
+
                 self.flag_n = true;
-                self.flag_h = false;
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0xD7 => {
+                // RST $10
+
+                self.sp -= 2;
+                mmu.write_word(self.sp, self.pc + 1);
+
+                self.pc = 0x0010;
+                self.cycles += 16;
+            }
+            0xD8 => {
+                // RET C
+
+                if self.flag_c {
+                    self.pc = mmu.read_word(self.sp);
+                    self.sp += 2;
+                    self.cycles += 20;
+                } else {
+                    self.cycles += 8;
+                    self.pc += 1;
+                }
+            }
+            0xD9 => {
+                // RETI
+
+                self.pc = mmu.read_word(self.sp);
+                self.sp += 2;
+                self.ime = true;
+                self.cycles += 16;
+            }
+            0xDA => {
+                // JP C, a16
+
+                if self.flag_c {
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 16;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xDB => {
+                // Pass
+            }
+            0xDC => {
+                // CALL C, a16
+
+                if self.flag_c {
+                    self.sp -= 2;
+                    mmu.write_word(self.sp, self.pc + 3);
+
+                    self.pc = mmu.read_word(self.pc + 1);
+                    self.cycles += 24;
+                } else {
+                    self.cycles += 12;
+                    self.pc += 3;
+                }
+            }
+            0xDD => {
+                // Pass
+            }
+            0xDE => {
+                // SBC A, n8
+
+                let data = mmu.read(self.pc + 1);
+
+                self.flag_h = (self.a & 0x0F) < (data & 0x0F) + self.flag_c as u8;
+                let new_flag_c = (self.a as u16) < (data as u16) + (self.flag_c as u16);
+
+                self.a = self.a.wrapping_sub(data).wrapping_sub(self.flag_c as u8);
+
+                self.flag_c = new_flag_c;
+
+                self.flag_z = self.a == 0;
+
+                self.flag_n = true;
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0xDF => {
+                // RST $18
+
+                self.sp -= 2;
+                mmu.write_word(self.sp, self.pc + 1);
+
+                self.pc = 0x0018;
+                self.cycles += 16;
+            }
+            0xE0 => {
+                // LDH [a8], A
+
+                let addr = (mmu.read(self.pc + 1) as u16) + 0xFF00;
+                mmu.write(addr, self.a);
+
+                self.cycles += 12;
+                self.pc += 2;
+            }
+            0xE1 => {
+                // POP HL
+
+                let addr = mmu.read_word(self.sp);
+                self.l = (addr & 0xFF) as u8;
+                self.h = (addr >> 8 & 0xFF) as u8;
+                self.sp += 2;
+
+                self.cycles += 12;
+                self.pc += 1;
+            }
+            0xE2 => {
+                // LDH [C], A
+
+                let addr = (self.c as u16) + 0xFF00;
+                mmu.write(addr, self.a);
+
+                self.cycles += 8;
+                self.pc += 1;
+            }
+            0xE3 => {
+                // Pass
+            }
+            0xE4 => {
+                // Pass
+            }
+            0xE5 => {
+                // PUSH HL
+
+                mmu.write(self.sp - 1, self.h);
+                mmu.write(self.sp - 2, self.l);
+                self.sp -= 2;
+
+                self.cycles += 16;
+                self.pc += 1;
+            }
+            0xE6 => {
+                // AND A, n8
+
+                let data = mmu.read(self.pc + 1);
+
+                self.a = self.a & data;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = true;
                 self.flag_c = false;
 
                 self.pc += 1;
                 self.cycles += 4;
+            }
+            0xE7 => {
+                // RST $20
+
+                self.sp -= 2;
+                mmu.write_word(self.sp, self.pc + 1);
+
+                self.pc = 0x0020;
+                self.cycles += 16;
+            }
+            0xE8 => {
+                // ADD SP, e8
+
+                let value = (mmu.read(self.pc + 1) as i8) as u16;
+
+                self.flag_h = ((self.sp & 0x0FFF) + (value & 0x0FFF)) > 0x0FFF;
+                self.flag_c = self.sp as u32 + value as u32 > 0xFFFF;
+
+                self.sp = self.sp.wrapping_add(value);
+
+                self.flag_z = false;
+
+                self.flag_n = false;
+
+                self.pc += 2;
+                self.cycles += 16;
+            }
+            0xE9 => {
+                // JP HL
+
+                self.pc = self.get_pair(Register::H, Register::L);
+                self.cycles += 4;
+            }
+            0xEA => {
+                // LD [a16], A
+
+                let addr = mmu.read_word(self.pc + 1);
+                mmu.write(addr, self.a);
+
+                self.pc += 3;
+                self.cycles += 16;
+            }
+            0xEB => {
+                // Pass
+            }
+            0xEC => {
+                // Pass
+            }
+            0xED => {
+                // Pass
+            }
+            0xEE => {
+                // XOR A, n8
+
+                let value = mmu.read(self.pc + 1);
+                self.a = self.a ^ value;
+
+                self.flag_z = self.a == 0;
+                self.flag_n = false;
+                self.flag_h = false;
+                self.flag_c = false;
+
+                self.pc += 2;
+                self.cycles += 8;
+            }
+            0xEF => {
+                // RST $28
+
+                self.sp -= 2;
+                mmu.write_word(self.sp, self.pc + 1);
+
+                self.pc = 0x0028;
+                self.cycles += 16;
+            }
+            0xF0 => {
+                // LDH A, [a8]
+
+                let addr = (mmu.read(self.pc + 1) as u16) + 0xFF00;
+                self.a = mmu.read(addr);
+
+                self.cycles += 12;
+                self.pc += 2;
+            }
+            0xF1 => {
+                // POP AF
+
+                
+            }
+
+            0xF3 => {
+                // DI
+
+                self.ime = false;
+
+                self.cycles += 4;
+                self.pc += 1;
             }
             _ => {}
         }
