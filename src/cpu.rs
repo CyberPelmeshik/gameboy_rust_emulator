@@ -1747,7 +1747,7 @@ impl Cpu {
                 self.set_pair(Register::B, Register::C, value.wrapping_add(1));
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x04 => {
                 // INC B
@@ -2195,7 +2195,7 @@ impl Cpu {
                 self.cycles += 4;
             }
             0x2D => {
-                // INC L
+                // DEC L
 
                 self.dec(Register::L);
 
@@ -2448,7 +2448,7 @@ impl Cpu {
                 self.b = mmu.read(addr);
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x47 => {
                 // LD B, A
@@ -2511,7 +2511,7 @@ impl Cpu {
                 self.c = mmu.read(addr);
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x4F => {
                 // LD C, A
@@ -2574,7 +2574,7 @@ impl Cpu {
                 self.d = mmu.read(addr);
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x57 => {
                 // LD D, A
@@ -2637,7 +2637,7 @@ impl Cpu {
                 self.e = mmu.read(addr);
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x5F => {
                 // LD E, A
@@ -2700,7 +2700,7 @@ impl Cpu {
                 self.h = mmu.read(addr);
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x67 => {
                 // LD H, A
@@ -2763,7 +2763,7 @@ impl Cpu {
                 self.l = mmu.read(addr);
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x6F => {
                 // LD L, A
@@ -2831,7 +2831,7 @@ impl Cpu {
                 // HALT
 
                 self.pc += 1;
-                self.cycles += 8;
+                self.cycles += 4;
             }
             0x77 => {
                 // LD [HL], A
@@ -2897,7 +2897,7 @@ impl Cpu {
                 self.a = mmu.read(addr);
 
                 self.pc += 1;
-                self.cycles += 4;
+                self.cycles += 8;
             }
             0x7F => {
                 // LD A, A
@@ -4237,8 +4237,8 @@ impl Cpu {
                 self.flag_h = true;
                 self.flag_c = false;
 
-                self.pc += 1;
-                self.cycles += 4;
+                self.pc += 2;
+                self.cycles += 8;
             }
             0xE7 => {
                 // RST $20
@@ -4406,7 +4406,7 @@ impl Cpu {
                 self.flag_z = false;
                 self.flag_n = false;
 
-                self.flag_h = ((self.sp & 0x0FFF) + (e8 & 0x0FFF)) > 0x0FF;
+                self.flag_h = ((self.sp & 0x0FFF) + (e8 & 0x0FFF)) > 0x0FFF;
                 self.flag_c = self.sp as u32 + e8 as u32 > 0xFFFF;
 
                 self.pc += 2;
@@ -4453,8 +4453,8 @@ impl Cpu {
                 self.flag_h = (self.a & 0x0F) < (value & 0x0f);
                 self.flag_c = self.a < value;
 
-                self.pc += 1;
-                self.cycles += 4;
+                self.pc += 2;
+                self.cycles += 8;
             }
             0xFF => {
                 // RST $38
