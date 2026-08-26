@@ -26,6 +26,7 @@ impl Mmu {
     pub fn load_rom(&mut self, path: &str) -> Result<(), std::io::Error> {
         let data = fs::read(path)?;
         self.rom = data;
+        //println!("{}", self.rom.len());
         Ok(())
     }
 
@@ -136,6 +137,9 @@ impl Mmu {
             0xFEA0..=0xFEFF => (),
             0xFF00..=0xFF7F => {
                 if let Some(mem) = self.io_registers.get_mut((addr - 0xFF00) as usize) {
+                    if addr == 0xFF01 {
+                        print!("{}", value as char);
+                    }
                     *mem = value
                 }
             }

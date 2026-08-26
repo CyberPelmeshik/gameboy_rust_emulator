@@ -1,4 +1,5 @@
 use crate::mmu::Mmu;
+use std::io;
 
 /*
 enum Instruction {
@@ -2823,6 +2824,7 @@ impl Cpu {
             0x76 => {
                 // HALT
 
+                //io::stdin();
                 self.pc += 1;
                 self.cycles += 4;
             }
