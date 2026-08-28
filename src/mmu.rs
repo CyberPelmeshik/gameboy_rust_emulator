@@ -8,6 +8,7 @@ pub struct Mmu {
     hram: [u8; 127],
     rom: Vec<u8>,
     ie: u8,
+    sb: String,
 }
 
 impl Mmu {
@@ -20,7 +21,12 @@ impl Mmu {
             hram: [0; 127],
             rom: Vec::new(),
             ie: 0,
+            sb: String::new(),
         }
+    }
+
+    pub fn sb(&self) -> &String {
+        return &self.sb;
     }
 
     pub fn load_rom(&mut self, path: &str) -> Result<(), std::io::Error> {
@@ -138,7 +144,7 @@ impl Mmu {
             0xFF00..=0xFF7F => {
                 if let Some(mem) = self.io_registers.get_mut((addr - 0xFF00) as usize) {
                     if addr == 0xFF01 {
-                        print!("{}", value as char);
+                        self.sb.push(value as char);
                     }
                     *mem = value
                 }

@@ -2113,13 +2113,12 @@ impl Cpu {
                         self.a = self.a.wrapping_sub(0x60);
                     }
                 } else {
-                    if self.flag_h || (self.a & 0x0F) > 0x09 {
-                        self.a = self.a.wrapping_add(0x06);
-                    }
-
                     if self.flag_c || self.a > 0x99 {
                         self.flag_c = true;
                         self.a = self.a.wrapping_add(0x60);
+                    }
+                    if self.flag_h || (self.a & 0x0F) > 0x09 {
+                        self.a = self.a.wrapping_add(0x06);
                     }
                 }
 
@@ -4246,8 +4245,8 @@ impl Cpu {
 
                 let value = (mmu.read(self.pc + 1) as i8) as u16;
 
-                self.flag_h = ((self.sp & 0x0FFF) + (value & 0x0FFF)) > 0x0FFF;
-                self.flag_c = self.sp as u32 + value as u32 > 0xFFFF;
+                self.flag_h = ((self.sp & 0x000F) + (value & 0x000F)) > 0x000F;
+                self.flag_c = ((self.sp & 0x00FF) + (value & 0x00FF)) > 0x00FF;
 
                 self.sp = self.sp.wrapping_add(value);
 
@@ -4398,8 +4397,8 @@ impl Cpu {
                 self.flag_z = false;
                 self.flag_n = false;
 
-                self.flag_h = ((self.sp & 0x0FFF) + (e8 & 0x0FFF)) > 0x0FFF;
-                self.flag_c = self.sp as u32 + e8 as u32 > 0xFFFF;
+                self.flag_h = ((self.sp & 0x000F) + (e8 & 0x000F)) > 0x000F;
+                self.flag_c = ((self.sp & 0x00FF) + (e8 & 0x00FF)) > 0x00FF;
 
                 self.pc += 2;
                 self.cycles += 12;
