@@ -13,10 +13,11 @@ fn main() {
     let mut mmu = Mmu::new();
     let mut cpu = Cpu::new();
 
-    mmu.load_rom(game_path);
+    let _ = mmu.load_rom(game_path);
     println!("Start");
     loop {
-        cpu.step(&mut mmu);
+        let cycles_cnt = cpu.step(&mut mmu);
+        mmu.div_reg_add(cycles_cnt as u8);
     }
     //let _ = mmu.load_rom(game_path);
 }

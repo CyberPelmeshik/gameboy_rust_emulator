@@ -64,6 +64,13 @@ impl Mmu {
         self.write(addr + 1, value_2);
     }
 
+    pub fn div_reg_add(&mut self, cycles: u8) {
+        // Добавляет в регистр, выделенный для записи таймера, кол-во циклов процессора
+
+        let value = self.read(0xFF04).wrapping_add(cycles);
+        self.write(0xFF04, value);
+    }
+
     pub fn read(&self, addr: u16) -> u8 {
         match addr {
             0x0000..=0x7FFF => self.rom.get(addr as usize).copied().unwrap_or(0xFF),
@@ -145,6 +152,12 @@ impl Mmu {
                 if let Some(mem) = self.io_registers.get_mut((addr - 0xFF00) as usize) {
                     if addr == 0xFF01 {
                         self.sb.push(value as char);
+                    }
+
+                    // При записи в регистр, выделенный для DIV, значение должно сбрасываться
+                    if addr == 0xFF04 {
+                        *mem = 0;
+                        return;
                     }
                     *mem = value
                 }

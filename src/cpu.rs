@@ -69,6 +69,11 @@ impl Cpu {
         }
     }
 
+    fn cycles_add(&mut self, mmu: &mut Mmu, value: u8) {
+        self.cycles += value as u64;
+        mmu.div_reg_add(value);
+    }
+
     fn get_pair(&self, high_reg: Register, low_reg: Register) -> u16 {
         let high_byte: u8;
         let low_byte: u8;
@@ -1711,8 +1716,9 @@ impl Cpu {
         }
     }
 
-    pub fn step(&mut self, mmu: &mut Mmu) {
+    pub fn step(&mut self, mmu: &mut Mmu) -> u64 {
         let opcode = mmu.read(self.pc);
+        let start_cycles = self.cycles;
 
         match opcode {
             0x00 => {
@@ -1876,6 +1882,9 @@ impl Cpu {
                 // STOP n8
 
                 // Потом доработать, пока не надо
+
+                // Сбрасываем регистр DIV в ноль
+                mmu.write(0xFF04, 0);
 
                 self.pc += 2;
                 self.cycles += 4;
@@ -4458,5 +4467,6 @@ impl Cpu {
             }
             _ => {}
         }
+        return self.cycles - start_cycles;
     }
 }
