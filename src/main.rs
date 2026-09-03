@@ -1,5 +1,6 @@
 mod cpu;
 mod mmu;
+mod timer;
 
 use std::range;
 
@@ -17,7 +18,7 @@ fn main() {
     println!("Start");
     loop {
         let cycles_cnt = cpu.step(&mut mmu);
-        mmu.div_reg_add(cycles_cnt as u8);
+        mmu.timediv_reg_add(cycles_cnt as u8);
     }
     //let _ = mmu.load_rom(game_path);
 }

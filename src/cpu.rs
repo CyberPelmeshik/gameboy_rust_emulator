@@ -1,5 +1,5 @@
 use crate::mmu::Mmu;
-use std::io;
+//use std::io;
 
 /*
 enum Instruction {

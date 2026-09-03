@@ -1,6 +1,8 @@
+use crate::timer::Timer;
 use std::fs;
 
 pub struct Mmu {
+    timer: Timer,
     vram: [u8; 8192],
     wram: [u8; 8192],
     oam: [u8; 160],
@@ -14,6 +16,7 @@ pub struct Mmu {
 impl Mmu {
     pub fn new() -> Self {
         Mmu {
+            timer: Timer::new(),
             vram: [0; 8192],
             wram: [0; 8192],
             oam: [0; 160],
@@ -64,11 +67,17 @@ impl Mmu {
         self.write(addr + 1, value_2);
     }
 
-    pub fn div_reg_add(&mut self, cycles: u8) {
-        // Добавляет в регистр, выделенный для записи таймера, кол-во циклов процессора
+    pub fn add_time(&mut self, cycles: u8) {
+        self.timer.add_cycles(cycles);
+    }
 
-        let value = self.read(0xFF04).wrapping_add(cycles);
-        self.write(0xFF04, value);
+    pub fn set_timer_state(&mut self, state: bool) {
+        let value = self.read(0xFF05);
+        if state {
+            self.write(0xFF05, value | 0x04);
+        } else {
+            self.write(0xFF05, value & 0x03);
+        }
     }
 
     pub fn read(&self, addr: u16) -> u8 {
