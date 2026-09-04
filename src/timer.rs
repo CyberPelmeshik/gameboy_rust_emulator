@@ -72,7 +72,7 @@ impl Timer {
         }
         return false;
     }
- 
+  
     pub fn add_cycles(&mut self, cycles: u8) -> bool {
         let mut interrupt = false;
         for _ in 0..cycles {
