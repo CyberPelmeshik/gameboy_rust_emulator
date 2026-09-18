@@ -71,7 +71,7 @@ impl Cpu {
 
     fn cycles_add(&mut self, mmu: &mut Mmu, value: u8) {
         self.cycles += value as u64;
-        mmu.div_reg_add(value);
+        mmu.add_time(value);
     }
 
     fn get_pair(&self, high_reg: Register, low_reg: Register) -> u16 {

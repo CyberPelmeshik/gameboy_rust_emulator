@@ -18,7 +18,7 @@ fn main() {
     println!("Start");
     loop {
         let cycles_cnt = cpu.step(&mut mmu);
-        mmu.timediv_reg_add(cycles_cnt as u8);
+        mmu.add_time(cycles_cnt as u8);
     }
     //let _ = mmu.load_rom(game_path);
 }
